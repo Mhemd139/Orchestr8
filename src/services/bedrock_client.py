@@ -65,6 +65,7 @@ class BedrockClient:
     1️⃣ **COORDINATES ARE FOR MOUSE COMMANDS ONLY**
     ⚠️ THIS IS ABSOLUTELY CRITICAL ⚠️
     
+    
     MOUSE COMMANDS (use coordinates):
     - CLICK, RIGHT_CLICK, DOUBLE_CLICK, DRAG, SCROLL
     - These actions target specific screen locations
@@ -74,6 +75,26 @@ class BedrockClient:
     - TYPE_TEXT, PRESS_KEY, KEY_COMBINATION
     - These actions send input to focused element
     - MUST have selector: null
+    CRITICAL RULES:
+    
+    6. WAIT ACTIONS - CRITICAL FOR RELIABILITY:
+    - When there is a time gap >2 seconds between consecutive steps, insert a WAIT action
+    - Calculate wait time from timestamp delta between steps
+    - Add 1-2 seconds buffer for page loading/network delays
+    - WAIT actions must have action: "WAIT", selector: null
+    - Parameters: {"duration_seconds": calculated_time}
+    - Example: If step 4 is at 11:52:59 and step 5 is at 11:53:04, insert WAIT for 5-6 seconds
+
+    Example WAIT step:
+    {
+    "step_id": "step-4-wait",
+    "action": "WAIT",
+    "description": "Wait for page to load",
+    "selector": null,
+    "parameters": {
+        "duration_seconds": 6
+    }
+    }
 
     2️⃣ **ELEMENT NAME USAGE**
     - Extract "element_name" from event data
