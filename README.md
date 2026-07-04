@@ -1,815 +1,126 @@
-# 🤖 Orchestr8: AI-Powered Workflow Automation Platform
+# Orchestr8
 
-<div align="center">
+Record a desktop task once — Amazon Nova Pro turns the recording into a semantic, self-healing workflow definition that can be replayed on demand.
 
-**Teach your PC once, let it work for you forever.**
+[![AWS Bedrock](https://img.shields.io/badge/AWS%20Bedrock-Nova%20Pro-FF9900)](https://aws.amazon.com/bedrock/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-[![AWS Bedrock](https://img.shields.io/badge/AWS-Bedrock-FF9900?style=flat-square&logo=amazon-aws)](https://aws.amazon.com/bedrock/)
-[![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=black)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+> **Status:** hackathon-born, functional prototype. The generation pipeline, REST API, and model-evaluation harness work end to end. Recording and execution happen in a companion desktop agent; the web UI's Run page is currently mocked.
 
-*An intelligent automation system that uses Amazon Nova Pro to transform recorded user interactions into optimized, executable workflows*
+## How it works
 
-</div>
+The system is built around one loop:
 
----
+1. **Record once.** A desktop recorder captures a session as a timeline of raw events — clicks with coordinates and element names, individual keystrokes, drags, scrolls, window switches.
+2. **Nova Pro generates the workflow.** The backend pre-groups keystroke noise, sends the simplified timeline to Amazon Nova Pro on Bedrock, and validates the model's JSON against Pydantic schemas. The result is a semantic workflow — named steps like "Type the search query", not a replayed mouse path.
+3. **Execute repeatedly.** Every step carries a self-healing selector (semantic text selector with a nested coordinate fallback), a retry count, a failure policy, and inferred `WAIT` steps — so an executor survives minor UI drift and slow page loads.
 
-## 📋 Table of Contents
+A recording of a click plus eleven keystrokes comes out as two steps:
 
-- [Overview](#-overview)
-- [The Problem & Solution](#-the-problem--solution)
-- [System Architecture](#-system-architecture)
-- [AI & Machine Learning Innovation](#-ai--machine-learning-innovation)
-- [Key Features](#-key-features)
-- [Technical Implementation](#-technical-implementation)
-- [Technology Stack](#-technology-stack)
-- [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
-- [Impact & Use Cases](#-impact--use-cases)
-- [Future Roadmap](#-future-roadmap)
-
----
-
-## 🎯 Overview
-
-**Orchestr8** is a sophisticated AI-powered automation platform that bridges the gap between human task demonstration and machine execution. By recording user interactions once and leveraging **Amazon Nova Pro** (AWS Bedrock's multimodal foundation model), the system generates optimized, semantic, and reusable workflow definitions that can be executed repeatedly without manual intervention.
-
-This project demonstrates advanced capabilities in:
-- **AI Agent Development** with large language models
-- **Prompt Engineering** for structured output generation
-- **Multimodal AI Integration** (vision + language)
-- **Full-Stack Software Architecture**
-- **Cloud-Native AI Services** (AWS Bedrock)
-- **Type-Safe System Design** with comprehensive data modeling
-
----
-
-## 🔍 The Problem & Solution
-
-### The Problem
-
-Traditional automation tools require:
-- ❌ Manual scripting with technical expertise
-- ❌ Brittle selectors that break with UI changes
-- ❌ Time-consuming setup for simple repetitive tasks
-- ❌ No semantic understanding of user intent
-- ❌ Difficult maintenance when applications update
-
-### The Solution
-
-Orchestr8 uses **AI-powered semantic understanding** to:
-- ✅ **Record once** - Simply perform the task naturally
-- ✅ **AI optimizes** - Nova Pro analyzes and generates intelligent workflows
-- ✅ **Execute forever** - Run the workflow repeatedly with one click
-- ✅ **Self-healing selectors** - Multiple fallback strategies for reliability
-- ✅ **Semantic intelligence** - Understands *what* you're doing, not just *where* you clicked
-
----
-
-## 🏗 System Architecture
-
-### High-Level Architecture
-
-```mermaid
-graph TB
-    subgraph "Frontend Layer"
-        A[React UI<br/>TypeScript + Vite]
-        A1[Recording Interface<br/>TeachPage]
-        A2[Execution Interface<br/>RunPage]
-        A3[Settings & Config<br/>SettingsPage]
-    end
-
-    subgraph "Backend Layer"
-        B[FastAPI Server<br/>Python + Uvicorn]
-        C[Workflow Generator<br/>Core Engine]
-        D[Format Converter<br/>Interoperability]
-    end
-
-    subgraph "AI Services Layer"
-        E[AWS Bedrock Client]
-        F[Amazon Nova Pro v1<br/>Multimodal LLM]
-        G[Image Processor<br/>Screenshot Analysis]
-    end
-
-    subgraph "Data Layer"
-        H[(Session Storage<br/>EventLog)]
-        I[(Workflow Store<br/>Definitions)]
-        J[S3 Storage<br/>Screenshots]
-    end
-
-    A1 --> B
-    A2 --> B
-    A3 --> B
-    B --> C
-    B --> D
-    C --> E
-    E --> F
-    C --> G
-    G --> J
-    C --> H
-    C --> I
-    F --> E
-    E --> C
-
-    style F fill:#FF9900,stroke:#232F3E,stroke-width:3px,color:#fff
-    style C fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
-    style A fill:#61DAFB,stroke:#20232A,stroke-width:2px,color:#000
-```
-
-### Data Flow Architecture
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant FastAPI
-    participant Generator
-    participant Bedrock
-    participant NovaPro as Amazon Nova Pro
-
-    User->>Frontend: Perform task (clicks, typing, etc.)
-    Frontend->>Frontend: Capture events + metadata
-    Frontend->>FastAPI: POST /generate with SessionTimeline
-
-    FastAPI->>Generator: generate_from_session()
-    Generator->>Generator: Simplify events (group typing)
-    Generator->>Bedrock: invoke_model() with prompt
-
-    Bedrock->>NovaPro: Process timeline + screenshots
-    NovaPro->>NovaPro: Analyze semantic intent
-    NovaPro->>Bedrock: Return structured JSON workflow
-
-    Bedrock->>Generator: WorkflowDefinition (raw)
-    Generator->>Generator: Enrich selectors
-    Generator->>Generator: Insert smart wait steps
-    Generator->>FastAPI: Optimized WorkflowDefinition
-
-    FastAPI->>Frontend: Return executable workflow
-    Frontend->>User: Display workflow steps
-
-    User->>Frontend: Execute workflow
-    Frontend->>Frontend: Run automation
-```
-
----
-
-## 🧠 AI & Machine Learning Innovation
-
-### Multimodal AI Integration
-
-This project showcases advanced **prompt engineering** and **multimodal AI orchestration**:
-
-#### 1. **Structured Output Generation**
-```python
-# Sophisticated prompt engineering for consistent JSON output
-system_prompt = """
-You are an expert at analyzing user interaction recordings and generating
-optimized workflow automation definitions. Your task is to:
-
-1. Analyze the sequence of events semantically
-2. Group related actions intelligently
-3. Extract robust UI element selectors
-4. Generate clean, executable workflows
-...
-"""
-```
-
-**Key Achievements:**
-- Designed prompts that enforce strict JSON schema compliance
-- Implemented few-shot learning patterns for consistent output
-- Created anti-pattern examples to prevent common AI mistakes
-- Achieved **95%+ selector accuracy** through intelligent fallback strategies
-
-#### 2. **Vision-Language Fusion**
-```mermaid
-graph LR
-    A[Event Timeline<br/>Text Data] --> C[Nova Pro<br/>Multimodal Model]
-    B[Screenshots<br/>Visual Data] --> C
-    C --> D[Semantic Understanding]
-    D --> E[Optimized Workflow<br/>Structured JSON]
-
-    style C fill:#FF9900,stroke:#232F3E,stroke-width:3px,color:#fff
-```
-
-- Processes both **text events** and **visual screenshots** simultaneously
-- Extracts UI element context from images for robust selector generation
-- Uses vision analysis to understand application state transitions
-
-#### 3. **Intelligent Action Grouping**
-
-The AI automatically identifies patterns and optimizes workflows:
-
-**Before (Raw Events):**
 ```json
-[
-  {"type": "MOUSE_CLICK", "target": "username_field"},
-  {"type": "TEXT_INPUT", "text": "j"},
-  {"type": "TEXT_INPUT", "text": "o"},
-  {"type": "TEXT_INPUT", "text": "h"},
-  {"type": "TEXT_INPUT", "text": "n"},
-  {"type": "KEY_PRESS", "key": "Tab"}
-]
-```
-
-**After (AI-Optimized):**
-```json
-[
-  {
-    "action": "TYPE_TEXT",
-    "selector": {"type": "text", "value": "username"},
-    "parameters": {"text": "john"},
-    "description": "Enter username into login field"
+{
+  "step_id": "step-1",
+  "action": "CLICK",
+  "description": "Click the YouTube search bar",
+  "selector": {
+    "type": "text",
+    "value": "Search",
+    "fallback": { "type": "coordinates", "value": { "x": 640, "y": 120 } }
   },
-  {
-    "action": "PRESS_KEY",
-    "parameters": {"key": "Tab"},
-    "description": "Navigate to next field"
-  }
-]
+  "retry_count": 3,
+  "on_failure": "stop"
+},
+{
+  "step_id": "step-2",
+  "action": "TYPE_TEXT",
+  "description": "Type the search query",
+  "selector": null,
+  "parameters": { "text": "rick astley" }
+}
 ```
 
-#### 4. **Smart Wait Step Insertion**
+Generation is more than a prompt ([workflow_generator.py](src/core/workflow_generator.py), [bedrock_client.py](src/services/bedrock_client.py)):
 
-AI analyzes temporal gaps and inserts intelligent wait steps:
+- **Action grouping** — keystroke-level events are collapsed into single `TYPE_TEXT` steps *before* the model sees them, cutting token cost and eliminating the most common grouping mistake.
+- **Selector discipline** — the prompt enforces hard rules (mouse actions must carry a selector, keyboard actions must have `selector: null`). The response is parsed, schema-validated, then enriched: missing selectors and coordinates are backfilled from the original event data.
+- **Wait inference** — timestamp gaps over 2 s between consecutive events become explicit `WAIT` steps (plus a 1 s buffer, capped at 10 s), so workflows tolerate page loads without hardcoded sleeps.
+- **Deterministic fallback** — `use_ai: false` runs the same grouping and wait-inference pipeline rule-based, with no Bedrock call. Useful as a baseline and when the model is unavailable.
 
-```python
-def _insert_wait_steps(self, steps: List[WorkflowStep],
-                       original_timeline: SessionTimeline) -> List[WorkflowStep]:
-    """
-    Analyzes timestamp deltas and inserts context-aware wait steps
-    - Detects network operations (>3s gaps)
-    - Identifies page loads (navigation + delay)
-    - Adds buffer for rendering delays
-    """
-```
+## Model selection
 
-**Impact:** Workflows adapt to real-world timing constraints without hardcoding delays
+The model wasn't picked on vibes. [evaluation/](evaluation/) is a harness that scores candidate Bedrock models — Amazon Nova Pro, Amazon Nova Lite, and Claude 3.5 Sonnet — on a rubric derived from the executor's actual failure modes:
 
-#### 5. **Model Evaluation Framework**
+| Metric | Weight | What it catches |
+| --- | --- | --- |
+| Selector accuracy | 30% | Keyboard steps with selectors, mouse steps without them |
+| Element extraction | 25% | Ignoring semantic element names present in the recording |
+| DRAG parameters | 15% | Drags missing end coordinates |
+| Key format | 15% | Recorder artifacts (`Key.` prefixes) leaking into output |
+| Action grouping | 15% | Keystroke sequences not collapsed into one step |
 
-Custom evaluation system for comparing foundation models:
+Each model is also measured on latency and cost per 1,000 workflows using Bedrock pricing. The harness emits an Excel side-by-side, score and cost-performance charts, and a decision report.
 
-```mermaid
-graph TB
-    A[Test Dataset<br/>Gold Standard Workflows] --> B[Evaluation Engine]
-    B --> C[Nova Pro]
-    B --> D[Nova Lite]
-    B --> E[Claude Sonnet]
+Nova Pro won on cost-adjusted quality: it held the strict output rules at $0.0008 / $0.0032 per 1K input/output tokens — roughly a quarter of Claude 3.5 Sonnet's price ($0.003 / $0.015) for comparable rubric scores. Nova Lite is an order of magnitude cheaper again but was less reliable at following the selector rules on complex sessions. Nova Pro's multimodal input also leaves room to feed screenshots as element context (see [test_vision_workflow.py](tests/test_vision_workflow.py)).
 
-    C --> F[Custom Metrics]
-    D --> F
-    E --> F
-
-    F --> G[Selector Accuracy<br/>Element Extraction]
-    F --> H[Action Grouping<br/>Efficiency Score]
-    F --> I[Cost-Performance<br/>Analysis]
-
-    G --> J[Excel Reports +<br/>Comparative Charts]
-    H --> J
-    I --> J
-
-    style F fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff
-```
-
-**Custom Metrics Implemented:**
-- `SelectorAccuracyMetric` - Validates correct selector assignment
-- `ElementExtractionMetric` - Measures UI element identification accuracy
-- `ActionGroupingMetric` - Evaluates workflow optimization quality
-- `DragParameterMetric` - Ensures complete DRAG action parameters
-
----
-
-## ✨ Key Features
-
-### 1. **Dual-Mode Generation**
-
-```mermaid
-graph LR
-    A[Session Timeline] --> B{Generation Mode}
-    B -->|AI-Powered| C[Bedrock Nova Pro<br/>Semantic Analysis]
-    B -->|Deterministic| D[Rule-Based<br/>Direct Conversion]
-    C --> E[Optimized Workflow]
-    D --> E
-
-    style C fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
-    style D fill:#2196F3,stroke:#1565C0,stroke-width:2px,color:#fff
-```
-
-- **AI Mode**: Uses Nova Pro for intelligent optimization and semantic understanding
-- **Deterministic Mode**: Reliable conversion without external dependencies
-- Both produce equivalent structured output for different use cases
-
-### 2. **Comprehensive Event Capture**
-
-Supports all major interaction types:
-- `MOUSE_CLICK` - Single and double clicks with coordinates
-- `TEXT_INPUT` - Keystroke-by-keystroke capture
-- `KEY_PRESS` / `KEY_COMBINATION` - Hotkeys and shortcuts
-- `SCROLL` - Vertical and horizontal scrolling
-- `MOUSE_DRAG` - Drag-and-drop operations
-- `NAVIGATION` - URL changes and page transitions
-- `WINDOW_SWITCH` - Application context switching
-
-### 3. **Self-Healing Selector Strategy**
-
-```python
-class Selector(BaseModel):
-    type: str  # "text" | "coordinates" | "xpath" | "css"
-    value: str
-    fallback_coordinates: Optional[Dict[str, int]] = None
-    fallback_index: Optional[int] = None
-```
-
-**Multi-Layer Matching:**
-1. **Primary**: Semantic text-based selector (e.g., "Login Button")
-2. **Fallback 1**: Coordinate-based positioning
-3. **Fallback 2**: Index-based selection
-4. **Fallback 3**: Visual matching via screenshots
-
-**Result:** Workflows remain functional even when UI changes
-
-### 4. **Real-Time Monitoring Dashboard**
-
-<table>
-<tr>
-<td width="50%">
-
-**TeachPage (Recording)**
-- Live event stream display
-- Screenshot capture indicators
-- Recording statistics
-- Session metadata collection
-
-</td>
-<td width="50%">
-
-**RunPage (Execution)**
-- Step-by-step progress tracking
-- Real-time execution status
-- Error handling and retry logic
-- Success/failure reporting
-
-</td>
-</tr>
-</table>
-
-### 5. **Cross-System Interoperability**
-
-Format converter enables integration with other automation systems:
-
-```python
-def convert_friend_format_to_session_timeline(
-    friend_recording: Dict[str, Any]
-) -> SessionTimeline:
-    """
-    Converts external recording formats to internal SessionTimeline
-    - Maps command types to standardized events
-    - Enriches metadata
-    - Cleans malformed data
-    """
-```
-
----
-
-## 🔧 Technical Implementation
-
-### Data Models (Type-Safe Design)
-
-All data structures use **Pydantic v2** for runtime validation and serialization:
-
-```python
-class EventLog(BaseModel):
-    """Represents a single user interaction event"""
-    event_type: str
-    timestamp: datetime
-    details: Dict[str, Any]
-    screenshot_path: Optional[str] = None
-    element_metadata: Optional[Dict[str, Any]] = None
-
-class SessionTimeline(BaseModel):
-    """Aggregates all events from a recording session"""
-    session_id: str
-    application_name: str
-    start_time: datetime
-    end_time: datetime
-    events: List[EventLog]
-    metadata: Dict[str, Any] = {}
-
-class WorkflowStep(BaseModel):
-    """Individual step in an executable workflow"""
-    step_number: int
-    action: str
-    selector: Optional[Selector] = None
-    parameters: Dict[str, Any] = {}
-    description: str
-    estimated_duration_ms: Optional[int] = None
-
-class WorkflowDefinition(BaseModel):
-    """Complete executable workflow definition"""
-    workflow_name: str
-    description: str
-    steps: List[WorkflowStep]
-    metadata: Dict[str, Any] = {}
-```
-
-### Core Generation Algorithm
-
-```python
-async def generate_from_session(
-    self,
-    session_timeline: SessionTimeline,
-    use_vision: bool = True
-) -> WorkflowDefinition:
-    """
-    AI-powered workflow generation pipeline:
-
-    1. Simplify raw events (group typing sequences)
-    2. Prepare context for LLM (events + screenshots)
-    3. Invoke Nova Pro via Bedrock
-    4. Parse and validate structured JSON response
-    5. Enrich selectors with fallback strategies
-    6. Insert intelligent wait steps based on timing
-    7. Generate semantic descriptions
-
-    Returns optimized, executable WorkflowDefinition
-    """
-```
-
-### AWS Bedrock Integration
-
-```python
-class BedrockWorkflowClient:
-    def __init__(self):
-        self.client = boto3.client('bedrock-runtime', region_name='us-east-1')
-        self.model_id = "amazon.nova-pro-v1:0"
-
-    async def generate_workflow(
-        self,
-        session_timeline: SessionTimeline,
-        screenshots: List[str] = None
-    ) -> WorkflowDefinition:
-        """
-        Invokes Nova Pro with:
-        - System prompt (workflow generation rules)
-        - User timeline (events in chronological order)
-        - Screenshots (base64 encoded images)
-
-        Returns parsed WorkflowDefinition with validation
-        """
-```
-
-**Configuration:**
-- Model: `amazon.nova-pro-v1:0`
-- Temperature: `0.7` (balance creativity and consistency)
-- Max Tokens: `4096` (sufficient for complex workflows)
-- Top-P: `0.9` (nucleus sampling)
-
----
-
-## 🛠 Technology Stack
-
-### Backend Stack
-| Technology | Purpose | Why Chosen |
-|------------|---------|------------|
-| **Python 3.8+** | Core language | Type hints, async support, rich ecosystem |
-| **FastAPI** | Web framework | Async performance, automatic OpenAPI docs, Pydantic integration |
-| **Boto3** | AWS SDK | Official AWS library for Bedrock integration |
-| **Pydantic v2** | Data validation | Runtime type checking, JSON serialization, schema generation |
-| **Pillow** | Image processing | Screenshot handling and base64 encoding |
-| **pytest** | Testing framework | Comprehensive test coverage with fixtures |
-
-### Frontend Stack
-| Technology | Purpose | Why Chosen |
-|------------|---------|------------|
-| **React 18.3** | UI framework | Virtual DOM, hooks, component reusability |
-| **TypeScript 5.8** | Type safety | Catch errors at compile-time, better IDE support |
-| **Vite 5.4** | Build tool | Lightning-fast HMR, optimized builds |
-| **Tailwind CSS** | Styling | Utility-first, rapid development, consistent design |
-| **shadcn-ui** | Component library | Accessible, customizable, built on Radix UI |
-| **React Router 6** | Routing | Client-side navigation, nested routes |
-| **TanStack Query** | Data fetching | Cache management, automatic refetching |
-| **Zod** | Schema validation | Type-safe runtime validation |
-
-### AI & Cloud Services
-| Service | Purpose | Capabilities |
-|---------|---------|--------------|
-| **AWS Bedrock** | Managed AI service | Model hosting, inference, scaling |
-| **Amazon Nova Pro v1** | Foundation model | Multimodal (vision+text), 300K context, structured output |
-| **AWS S3** | Object storage | Screenshot and asset storage |
-
-### Development Tools
-- **Git** - Version control
-- **pytest** - Python testing
-- **ESLint** - JavaScript/TypeScript linting
-- **Black** - Python code formatting
-- **fmeval** - Model evaluation framework
-
----
-
-## 📁 Project Structure
-
-```
-bedrock-workflow-generator/
-│
-├── src/                                    # Python backend
-│   ├── api/
-│   │   └── main.py                        # FastAPI server with REST endpoints
-│   ├── core/
-│   │   └── workflow_generator.py          # Core generation engine
-│   ├── models/
-│   │   ├── events.py                      # EventLog, SessionTimeline models
-│   │   └── workflow.py                    # WorkflowDefinition, WorkflowStep
-│   ├── services/
-│   │   ├── bedrock_client.py              # AWS Bedrock integration layer
-│   │   ├── image_processor.py             # Screenshot handling
-│   │   └── s3_client.py                   # S3 storage client
-│   ├── tools/
-│   │   └── format_converter.py            # External format conversion
-│   └── utils/
-│       └── workflow_formatter.py          # Output formatting utilities
-│
-├── frontend/                               # React frontend application
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── HomePage.tsx               # Landing page
-│   │   │   ├── TeachPage.tsx              # Recording interface
-│   │   │   ├── RunPage.tsx                # Execution interface
-│   │   │   └── SettingsPage.tsx           # Configuration panel
-│   │   ├── components/
-│   │   │   ├── teach/                     # Recording UI components
-│   │   │   │   ├── EventLog.tsx
-│   │   │   │   ├── RecordingControls.tsx
-│   │   │   │   └── RecordingOverview.tsx
-│   │   │   ├── run/                       # Execution UI components
-│   │   │   │   ├── WorkflowSelector.tsx
-│   │   │   │   ├── ExecutionStatus.tsx
-│   │   │   │   └── TimelineStrip.tsx
-│   │   │   └── ui/                        # shadcn-ui components
-│   │   ├── types/
-│   │   │   └── workflow.ts                # TypeScript type definitions
-│   │   └── lib/
-│   │       ├── api.ts                     # API client
-│   │       └── utils.ts                   # Utility functions
-│   └── public/                            # Static assets
-│
-├── tests/                                  # Comprehensive test suite
-│   ├── test_workflow_generation.py        # Generator unit tests
-│   ├── test_vision_workflow.py            # Vision analysis tests
-│   └── test_realistic_workflow.py         # Integration tests
-│
-├── evaluation/                             # Model evaluation system
-│   ├── config.py                          # Evaluation configuration
-│   ├── custom_metrics.py                  # Custom quality metrics
-│   ├── prepare_dataset.py                 # Test dataset preparation
-│   ├── run_fmeval.py                      # Evaluation runner
-│   ├── analyze_results.py                 # Results analysis
-│   └── compare_models.py                  # Multi-model comparison
-│
-├── requirements.txt                        # Python dependencies
-├── frontend/package.json                   # Node.js dependencies
-└── README.md                               # This file
-```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Python 3.8 or higher
-- Node.js 18+ and npm
-- AWS Account with Bedrock access
-- AWS CLI configured with credentials
-
-### Backend Setup
+To rerun the comparison:
 
 ```bash
-# 1. Navigate to project directory
-cd orchestr8
+# drop recorded sessions into evaluation/test_cases/{simple,medium,complex}/
+python -m evaluation.run_complete_evaluation
+```
 
-# 2. Create virtual environment
+Reports land in `evaluation/results/analysis/`.
+
+## Architecture
+
+```text
+frontend/                        React + TypeScript (Vite, shadcn/ui) — Teach and Run pages
+  │  POST /generate
+src/api/main.py                  FastAPI — /generate, /generate/friend-format, /health
+src/core/workflow_generator.py   grouping · selector enrichment · wait inference · deterministic mode
+src/services/bedrock_client.py   Nova Pro prompting and invocation (boto3, adaptive retries)
+src/models/                      Pydantic contracts: SessionTimeline in, WorkflowDefinition out
+src/tools/format_converter.py    converts the companion recorder's native format
+evaluation/                      model-comparison harness (rubric, cost, reports)
+tests/                           pytest suite
+```
+
+Everything that crosses a boundary is a Pydantic model. The API contract is `SessionTimeline` in, `WorkflowDefinition` out — the same definition the executor consumes.
+
+| Endpoint | Description |
+| --- | --- |
+| `GET /health` | Bedrock connectivity check and active model id |
+| `POST /generate` | `{ "session": SessionTimeline, "use_ai": true }` → `WorkflowDefinition` |
+| `POST /generate/friend-format` | Same, but accepts the companion recorder's native format |
+
+## Getting started
+
+Prerequisites: Python 3.10+, Node 18+, an AWS account with Bedrock access in `us-east-1` (AWS Console → Bedrock → Model access → enable Amazon Nova Pro).
+
+```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# 3. Install Python dependencies
+venv\Scripts\activate            # source venv/bin/activate on macOS/Linux
 pip install -r requirements.txt
-
-# 4. Configure AWS credentials
-aws configure
-# Enter your AWS Access Key ID, Secret Key, and region (us-east-1)
-
-# 5. Enable Bedrock model access
-# Go to AWS Console → Bedrock → Model Access
-# Request access to Amazon Nova Pro
-
-# 6. Start the FastAPI server
-cd src
-uvicorn api.main:app --reload --port 8000
+cp .env.example .env
+aws configure                    # credentials come from the standard AWS chain, not .env
+uvicorn src.api.main:app --reload --port 8000
 ```
 
-Server will be available at: `http://localhost:8000`
-
-### Frontend Setup
+Frontend:
 
 ```bash
-# 1. Navigate to frontend directory
 cd frontend
-
-# 2. Install dependencies
 npm install
-
-# 3. Start development server
-npm run dev
+npm run dev                      # http://localhost:5173
 ```
 
-Frontend will be available at: `http://localhost:5173`
-
-### Running Tests
+Tests:
 
 ```bash
-# Backend tests
 pytest tests/ -v
-
-# Frontend tests (if configured)
-cd frontend && npm test
 ```
 
-### Evaluation System
+## License
 
-```bash
-# Prepare evaluation dataset
-python evaluation/prepare_dataset.py
-
-# Run model comparison
-python evaluation/run_complete_evaluation.py
-
-# Analyze results
-python evaluation/analyze_results.py
-```
-
----
-
-## 💡 Impact & Use Cases
-
-### Business Impact
-
-| Metric | Impact |
-|--------|--------|
-| **Time Savings** | 70-90% reduction in repetitive task execution time |
-| **Error Reduction** | 95%+ accuracy with AI-optimized selectors |
-| **Accessibility** | Non-technical users can create automation |
-| **Maintenance** | Self-healing selectors reduce maintenance by 60% |
-
-### Real-World Use Cases
-
-#### 1. **Data Entry Automation**
-- Record form filling process once
-- AI generates workflow with smart field detection
-- Execute for hundreds of records automatically
-
-#### 2. **Testing & QA**
-- Record manual test procedures
-- Generate reusable test workflows
-- Execute regression tests with one click
-
-#### 3. **Report Generation**
-- Record report creation steps
-- AI optimizes the workflow
-- Schedule automated report generation
-
-#### 4. **Customer Support**
-- Record ticket resolution process
-- Generate standard operating procedures
-- Train AI to handle similar tickets
-
-#### 5. **DevOps Operations**
-- Record deployment procedures
-- Generate automated deployment workflows
-- Ensure consistency across environments
-
----
-
-## 🎓 Technical Achievements & Learning Outcomes
-
-This project demonstrates proficiency in:
-
-### AI/ML Engineering
-✅ **Prompt Engineering** - Designed sophisticated prompts for consistent structured output
-✅ **Multimodal AI** - Integrated vision + language models effectively
-✅ **Model Evaluation** - Built custom metrics and comparison frameworks
-✅ **Foundation Model Integration** - Production-grade AWS Bedrock implementation
-
-### Software Architecture
-✅ **Full-Stack Development** - React + FastAPI + AWS cloud services
-✅ **Type-Safe Design** - Pydantic + TypeScript for end-to-end type safety
-✅ **Async Architecture** - FastAPI async endpoints with concurrent processing
-✅ **API Design** - RESTful APIs with OpenAPI documentation
-
-### Cloud & DevOps
-✅ **AWS Bedrock** - Managed AI service integration
-✅ **Infrastructure as Code** - Reproducible cloud deployments
-✅ **Scalable Architecture** - Designed for horizontal scaling
-
-### Best Practices
-✅ **Test-Driven Development** - Comprehensive test coverage
-✅ **Code Quality** - Linting, formatting, type checking
-✅ **Documentation** - Clear documentation and diagrams
-✅ **Version Control** - Git best practices with semantic commits
-
----
-
-## 🔮 Future Roadmap
-
-### Phase 1: Enhanced AI Capabilities
-- [ ] Multi-step reasoning with chain-of-thought prompting
-- [ ] Self-correction loops for improved accuracy
-- [ ] Fine-tuned models on domain-specific workflows
-- [ ] Custom Nova Pro adaptations for specific industries
-
-### Phase 2: Advanced Features
-- [ ] Conditional logic and branching in workflows
-- [ ] Error recovery and retry strategies
-- [ ] Parallel execution of independent steps
-- [ ] Workflow versioning and rollback
-
-### Phase 3: Enterprise Features
-- [ ] Multi-user collaboration
-- [ ] Role-based access control
-- [ ] Audit logging and compliance
-- [ ] Workflow marketplace and sharing
-
-### Phase 4: Platform Expansion
-- [ ] Browser extension for web automation
-- [ ] Desktop application for native OS automation
-- [ ] Mobile app recorder
-- [ ] Integration APIs for third-party tools
-
----
-
-## 📊 Performance Metrics
-
-### Model Performance (Amazon Nova Pro)
-
-| Metric | Value |
-|--------|-------|
-| Selector Accuracy | 95.3% |
-| Element Extraction | 98.1% |
-| Action Grouping Efficiency | 87.5% |
-| Workflow Execution Success Rate | 94.7% |
-| Average Generation Time | 2.3s |
-| Cost per Workflow | $0.012 |
-
-### System Performance
-
-| Metric | Value |
-|--------|-------|
-| API Response Time (p95) | 180ms |
-| Frontend Load Time | 1.2s |
-| Concurrent Users Supported | 100+ |
-| Workflow Storage Efficiency | 95% compression ratio |
-
----
-
-## 🤝 Contributing
-
-This is a portfolio project demonstrating AI engineering capabilities. Feedback and suggestions are welcome!
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👤 Author
-
-**Muhammad Masarwa**
-
-Passionate AI Engineer specializing in foundation model integration, prompt engineering, and full-stack AI application development.
-
-- 🔗 LinkedIn: [LinkedIn Profile](https://linkedin.com/in/muhammad-masarwa-923662206)
-- 📧 Email: mhemd.masa@gmail.com
-
----
-
-## 🙏 Acknowledgments
-
-- **AWS Bedrock Team** - For providing access to Amazon Nova Pro
-- **Anthropic** - For Claude models used in evaluation comparisons
-- **FastAPI Community** - For excellent documentation and support
-- **shadcn** - For the beautiful UI component library
-
----
-
-<div align="center">
-
-**Built with ❤️ using AI, Python, and React**
-
-*Showcasing the future of intelligent automation*
-
-[⬆ Back to Top](#-orchestr8-ai-powered-workflow-automation-platform)
-
-</div>
+MIT — see [LICENSE](LICENSE). Built by [Muhammad Masarwa](https://linkedin.com/in/muhammad-masarwa-923662206).
