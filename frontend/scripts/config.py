@@ -1,4 +1,4 @@
-# Configuration file for Shadow Worker
+# Configuration for the Orchestr8 recorder/executor bridge
 import os
 
 # API Configuration
