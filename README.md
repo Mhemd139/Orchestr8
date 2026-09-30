@@ -76,7 +76,9 @@ Reports land in `evaluation/results/analysis/`.
 
 ```text
 frontend/                        React + TypeScript (Vite, shadcn/ui) — Teach and Run pages
-  │  POST /generate
+  │  HTTP :5000
+frontend/scripts/server.py       Flask bridge — starts/stops the recorder and executor
+  │  POST /generate/friend-format
 src/api/main.py                  FastAPI — /generate, /generate/friend-format, /health
 src/core/workflow_generator.py   grouping · selector enrichment · wait inference · deterministic mode
 src/services/bedrock_client.py   Nova Pro prompting and invocation (boto3, adaptive retries)
@@ -107,12 +109,18 @@ aws configure                    # credentials come from the standard AWS chain,
 uvicorn src.api.main:app --reload --port 8000
 ```
 
-Frontend:
+Recorder bridge and frontend, each in its own terminal:
+
+```bash
+cd frontend
+pip install -r requirements.txt
+python scripts/server.py         # http://localhost:5000
+```
 
 ```bash
 cd frontend
 npm install
-npm run dev                      # http://localhost:5173
+npm run dev                      # http://localhost:8080
 ```
 
 Tests:
