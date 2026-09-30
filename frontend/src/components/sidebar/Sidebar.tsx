@@ -12,7 +12,7 @@ export const Sidebar = () => {
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 border-r border-sidebar-border bg-sidebar">
       <div className="flex h-16 items-center border-b border-sidebar-border px-6">
-        <h1 className="text-xl font-bold text-foreground">Shadow Worker</h1>
+        <h1 className="text-xl font-bold text-foreground">Orchestr8</h1>
       </div>
       
       <nav className="space-y-1 p-4">
