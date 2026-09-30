@@ -5,16 +5,19 @@ import { CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
-  const [apiUrl, setApiUrl] = useState('https://api.shadowworker.example');
+  const [apiUrl, setApiUrl] = useState('http://localhost:8000');
   const [startWithWindows, setStartWithWindows] = useState(true);
   const [showMiniRecorder, setShowMiniRecorder] = useState(true);
 
-  const handleTestConnection = () => {
-    const isSuccess = Math.random() > 0.5;
-    if (isSuccess) {
-      toast.success('Connection test successful!');
-    } else {
-      toast.error('Connection test failed. Please check your settings.');
+  const handleTestConnection = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/health`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { status } = await res.json();
+      if (status === 'healthy') toast.success('Connected: Bedrock is reachable.');
+      else toast.error('API is up, but Bedrock is not connected. Check your AWS credentials.');
+    } catch (err) {
+      toast.error(`Cannot reach ${apiUrl}: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
@@ -29,10 +32,10 @@ export default function SettingsPage() {
             label="Backend API URL"
             value={apiUrl}
             onChange={(e) => setApiUrl(e.target.value)}
-            placeholder="https://api.shadowworker.example"
+            placeholder="http://localhost:8000"
           />
           <PrimaryButton onClick={handleTestConnection} variant="secondary">
-            Test connection (mock)
+            Test connection
           </PrimaryButton>
         </div>
       </div>
